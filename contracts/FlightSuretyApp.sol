@@ -5,12 +5,14 @@ pragma solidity ^0.4.25;
 // More info: https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2018/november/smart-contract-insecurity-bad-arithmetic/
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./FlightSuretyData.sol";
 
 /************************************************** */
 /* FlightSurety Smart Contract                      */
 /************************************************** */
 contract FlightSuretyApp {
     using SafeMath for uint256; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
+    FlightSuretyData flightData;
 
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
@@ -34,6 +36,10 @@ contract FlightSuretyApp {
     }
     mapping(bytes32 => Flight) private flights;
 
+    /********************************************************************************************/
+    /*                                       EVENTS                                             */
+    /********************************************************************************************/
+    event AirlineFunded(address airline);
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -49,9 +55,8 @@ contract FlightSuretyApp {
     */
     modifier requireIsOperational() 
     {
-         // Modify to call data contract's status
-        require(true, "Contract is currently not operational");  
-        _;  // All modifiers require an "_" which indicates where the function body will be added
+        require(isOperational(), "Contract is currently not operational.");  
+        _;
     }
 
     /**
@@ -59,9 +64,22 @@ contract FlightSuretyApp {
     */
     modifier requireContractOwner()
     {
-        require(msg.sender == contractOwner, "Caller is not contract owner");
+        require(msg.sender == contractOwner, "Caller is not contract owner/");
         _;
     }
+
+    /**
+    * @dev Modifier that requires the Airline account exists, funded and approved 
+    */
+    modifier requireIsAuthorizedAirline()
+    {
+        if (flightData.getAirlinesCount() > 0) {
+            require(flightData.isAirline(msg.sender), "Airline is not authorized to register other airlines.");
+        }
+        _;
+    }
+
+    
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -69,20 +87,23 @@ contract FlightSuretyApp {
 
     /**
     * @dev Contract constructor
-    *
+    * Registers First Airline
     */
-    constructor() public 
+    constructor(address dataContract, address firstAirline) public 
     {
         contractOwner = msg.sender;
+        flightData = FlightSuretyData(dataContract);
+        // flightData.authorizeContract(contractOwner);
+        registerAirline(firstAirline);
     }
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() public pure returns(bool) 
+    function isOperational() public view returns(bool) 
     {
-        return true;  // Modify to call data contract's status
+        return flightData.isOperational();
     }
 
     /********************************************************************************************/
@@ -94,9 +115,36 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */   
-    function registerAirline() external pure returns(bool success, uint256 votes)
+    function registerAirline(address airlineAddress) 
+        public 
+        requireIsOperational() 
+        requireIsAuthorizedAirline() 
+        returns(bool success, uint256 votes) 
+    {        
+        flightData.registerAirline(airlineAddress, isConsensusNeeded());
+        return (true, 0);
+    }
+
+    /**
+     * @dev Gives an approval vote to airline
+     *
+     */
+    function voteAirline(address airlineAddress) public 
+        requireIsOperational() 
     {
-        return (success, 0);
+        flightData.voteAirline(airlineAddress, msg.sender);
+    }
+
+    /**
+     * @dev Funds an Airline
+     *
+     */
+    function fundAirline() public payable 
+        requireIsOperational() 
+    {
+        require(msg.value >= flightData.getMinimumInitialFund(), 'Not enough funds');
+        flightData.fund.value(msg.value)(msg.sender);
+        emit AirlineFunded(msg.sender);
     }
 
 
@@ -104,17 +152,21 @@ contract FlightSuretyApp {
     * @dev Register a future flight for insuring.
     *
     */  
-    function registerFlight() external pure
+    function registerFlight(string flight, uint256 departureTimestamp) external
     {
-
+        flightData.registerFlight(msg.sender, flight, departureTimestamp);
     }
     
    /**
     * @dev Called after oracle has updated flight status
     *
     */  
-    function processFlightStatus(address airline, string memory flight, uint256 timestamp, uint8 statusCode) internal pure
+    function processFlightStatus(address airline, string memory flight, uint256 departureTimestamp, uint8 statusCode) internal 
     {
+        flightData.setFlightStatus(airline, flight, statusCode, departureTimestamp);
+        if (statusCode == STATUS_CODE_LATE_AIRLINE) {
+            flightData.creditInsurees(airline, flight, departureTimestamp);
+        }
     }
 
 
@@ -199,9 +251,6 @@ contract FlightSuretyApp {
         return oracles[msg.sender].indexes;
     }
 
-
-
-
     // Called by oracle when a response is available to an outstanding request
     // For the response to be accepted, there must be a pending request that is open
     // and matches one of the three Indexes randomly assigned to the oracle at the
@@ -267,6 +316,11 @@ contract FlightSuretyApp {
         }
 
         return random;
+    }
+
+    function isConsensusNeeded() internal returns (bool consensusNeeded)
+    {
+        return flightData.getAirlinesCount() > flightData.getMinimumAirlineConsensus();
     }
 
 // endregion
