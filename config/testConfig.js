@@ -16,7 +16,6 @@ var Config = async function(accounts) {
         "0x6b85cc8f612d5457d49775439335f83e12b8cfde",
         "0xcbd22ff1ded1423fbc24a7af2148745878800024",
         "0xc257274276a4e539741ca11b590b9447b26a8051",
-        "0x2f2899d6d35b1a48a4fbdc93a37a72f264a9fca7"
     ];
 
 
@@ -26,7 +25,7 @@ var Config = async function(accounts) {
     let flightSuretyData = await FlightSuretyData.new();
     let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address, firstAirline);
 
-    
+
     return {
         owner: owner,
         firstAirline: firstAirline,

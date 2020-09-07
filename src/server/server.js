@@ -6,6 +6,7 @@ import express from 'express';
 
 let config = Config['localhost'];
 let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
+
 web3.eth.defaultAccount = web3.eth.accounts[0];
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
 let flightSuretyData = new web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
@@ -48,23 +49,23 @@ web3.eth.getAccounts((error, accounts) => {
   });
 
   for (let a = ORACLES_ACCOUNT_OFFSET; a < ORACLES_COUNT + ORACLES_ACCOUNT_OFFSET; a++) {
-    flightSuretyApp.methods.registerOracle().send({ 
-      from: accounts[a], 
-      value: web3.utils.toWei("1", 'ether'), 
-      gas: GAS 
+    flightSuretyApp.methods.registerOracle().send({
+      from: accounts[a],
+      value: web3.utils.toWei("1", 'ether'),
+      gas: GAS
     }, (error, result) => {
       if (error) {
         console.log(error);
       } else {
-        flightSuretyApp.methods.getMyIndexes().call({ 
-          from: accounts[a] 
+        flightSuretyApp.methods.getMyIndexes().call({
+          from: accounts[a]
         }, (error, result) => {
           if (error) {
             console.log(error);
           } else {
-            let oracle = { 
-              address: accounts[a], 
-              index: result 
+            let oracle = {
+              address: accounts[a],
+              index: result
             };
             console.log(JSON.stringify(oracle));
             oracles.push(oracle);
@@ -75,8 +76,8 @@ web3.eth.getAccounts((error, accounts) => {
   };
 });
 
-flightSuretyApp.events.OracleRequest({ 
-  fromBlock: 0 
+flightSuretyApp.events.OracleRequest({
+  fromBlock: 0
 }, function (error, event) {
   if (error) {
     console.log(error);
@@ -85,12 +86,13 @@ flightSuretyApp.events.OracleRequest({
     let airline = event.returnValues.airline;
     let flight = event.returnValues.flight;
     let timestamp = event.returnValues.timestamp;
-    let statusCode = getRandomStatusCode();
+    let statusCode = generateRandomState();
 
     for (let a = 0; a < oracles.length; a++) {
       if (oracles[a].index.includes(index)) {
-        flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, statusCode).send({ 
-          from: oracles[a].address 
+        flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, statusCode)
+        .send({
+          from: oracles[a].address
         }, (error, result) => {
           if (error) {
             console.log(error);
