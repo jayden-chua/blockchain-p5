@@ -15,6 +15,12 @@ import './flightsurety.css';
             console.log(error,result);
             display('Operational Status', 'Check if contract is operational', [ { label: 'Operational Status', error: error, value: result} ]);
         });
+
+        contract.getAirlinesCount((error, result) => {
+            if (error) console.log(error)
+            document.getElementById('airline-count').innerHTML = result;
+            console.log(result);
+        });
     
 
         // User-submitted transaction

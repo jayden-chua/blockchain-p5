@@ -53,4 +53,11 @@ export default class Contract {
                 callback(error, payload);
             });
     }
+
+    getAirlinesCount(callback) {
+        let self = this;
+        self.flightSuretyApp.methods
+            .getAirlinesCount()
+            .call({from: self.owner}, callback);
+    }
 }
