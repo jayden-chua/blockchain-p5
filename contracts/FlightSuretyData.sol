@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity >0.4.25;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -10,12 +10,12 @@ contract FlightSuretyData {
     /********************************************************************************************/
 
     // Minimum of Airlines before consensus required
-    uint256 private minAirlineConsensusThreshold = 4; 
-    uint256 private minPercentageVotesRequired = 50; 
-    uint256 private minInitialFund = 10 ether; 
+    uint256 private minAirlineConsensusThreshold = 4;
+    uint256 private minPercentageVotesRequired = 50;
+    uint256 private minInitialFund = 10000000000000000000;
 
     address private contractOwner;
-    bool private operational = true;                                    
+    bool private operational = true;
 
     struct Votes{
         uint voteCount;
@@ -60,15 +60,18 @@ contract FlightSuretyData {
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
     event AirlineRegistered(address newAirline);
+    event AirlineFunded(address airline);
     event PassengerRefunded(address passenger, uint256 refundAmount);
+
 
     /**
     * @dev Constructor
     *      The deploying account becomes contractOwner
     */
-    constructor() public 
+    constructor() public
     {
         contractOwner = msg.sender;
+        authorizedContracts[contractOwner] = true;
     }
 
     /********************************************************************************************/
@@ -80,10 +83,10 @@ contract FlightSuretyData {
 
     /**
     * @dev Modifier that requires the "operational" boolean variable to be "true"
-    *      This is used on all state changing functions to pause the contract in 
+    *      This is used on all state changing functions to pause the contract in
     *      the event there is an issue that needs to be fixed
     */
-    modifier requireIsOperational 
+    modifier requireIsOperational
     {
         require(operational, "Contract is currently not operational");
         _;  // All modifiers require an "_" which indicates where the function body will be added
@@ -103,7 +106,7 @@ contract FlightSuretyData {
     */
     modifier requireAuthorizedContracts
     {
-        require(authorizedContracts[msg.sender], "Caller is not authorized");
+        require(authorizedContracts[msg.sender] == true, "Caller is not authorized");
         _;
     }
 
@@ -160,8 +163,8 @@ contract FlightSuretyData {
     * @dev Get operating status of contract
     *
     * @return A bool that is the current operating status
-    */      
-    function isOperational() public view returns(bool) 
+    */
+    function isOperational() public view returns(bool)
     {
         return operational;
     }
@@ -171,8 +174,8 @@ contract FlightSuretyData {
     * @dev Sets contract operations on/off
     *
     * When operational mode is disabled, all write transactions except for this one will fail
-    */    
-    function setOperatingStatus(bool mode) external 
+    */
+    function setOperatingStatus(bool mode) external
         requireContractOwner()
     {
         operational = mode;
@@ -186,11 +189,13 @@ contract FlightSuretyData {
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
-    */   
+    */
     function registerAirline(address airlineAddress, bool isConsensusNeeded)
         requireIsOperational
-        // requireAuthorizedContracts
     {
+        if (getAirlinesCount() > 0) {
+            require(authorizedContracts[msg.sender], 'Unauthorized Contract');
+        }
         airlines[airlineAddress] = Airline({
             exists: true,
             isApproved: !isConsensusNeeded,
@@ -207,8 +212,8 @@ contract FlightSuretyData {
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
-    */   
-    function voteAirline(address candidateAirlineAddress, address voterAirlineAddress) 
+    */
+    function voteAirline(address candidateAirlineAddress, address voterAirlineAddress)
         requireIsOperational
         requireAuthorizedContracts
         updatesAirlineApproval(candidateAirlineAddress)
@@ -249,20 +254,20 @@ contract FlightSuretyData {
    /**
     * @dev Buy insurance for a flight
     *
-    */   
+    */
     function buy(address airline, string flight, uint256 timestamp) external payable
         requireIsOperational
     {
         require(msg.value > 0 && msg.value <= 1 ether, 'Pay up to 1 Ether');
         bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-        
+
         insurances[flightKey].push(InsurancePolicy({
             insuredAddress: msg.sender,
             insuredValue: msg.value,
             insuredFlight: flightKey,
             isRefunded: false
         }));
-         
+
     }
 
     /**
@@ -286,7 +291,7 @@ contract FlightSuretyData {
             }
         }
     }
-    
+
 
     /**
      *  @dev Transfers eligible payout funds to insuree
@@ -300,23 +305,25 @@ contract FlightSuretyData {
     * @dev Initial funding for the insurance. Unless there are too many delayed flights
     *      resulting in insurance payouts, the contract should be self-sustaining
     *
-    */   
-    function fund(address airlineAddress) public payable  
-        requireIsOperational() 
+    */
+    function fund(address airlineAddress) public payable
+        requireIsOperational
+        requireAuthorizedContracts
         requireAirlineExists(airlineAddress)
-        requireAirlineApproved(airlineAddress) 
+        requireAirlineApproved(airlineAddress)
     {
         airlines[airlineAddress].isFunded = true;
+        emit AirlineFunded(airlineAddress);
     }
 
-    function isAirline(address airline) public 
+    function isAirline(address airline) public
         requireIsOperational()
         returns(bool)
     {
         return airlines[airline].exists && airlines[airline].isApproved && airlines[airline].isFunded;
     }
 
-    function getFlightKey(address airline, string memory flight, uint256 timestamp) pure internal returns(bytes32) 
+    function getFlightKey(address airline, string memory flight, uint256 timestamp) pure internal returns(bytes32)
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
@@ -325,14 +332,14 @@ contract FlightSuretyData {
         return airlinesCount;
     }
 
-    function authorizeCaller(address appContract) external 
-        requireContractOwner
+    function authorizeContract(address appContract) public
         requireIsOperational
+        requireContractOwner
     {
         authorizedContracts[appContract] = true;
     }
 
-    function deauthorizeContract(address appContract) external
+    function deauthorizeContract(address appContract) public
         requireContractOwner
         requireIsOperational
     {
@@ -340,26 +347,26 @@ contract FlightSuretyData {
         delete authorizedContracts[appContract];
     }
 
-    function setMinimumAirlineConsensus(uint256 numberOfAirlines) external 
+    function setMinimumAirlineConsensus(uint256 numberOfAirlines) external
         requireIsOperational
     {
         minAirlineConsensusThreshold = numberOfAirlines;
     }
 
-    function getMinimumAirlineConsensus() external 
+    function getMinimumAirlineConsensus() external
         requireIsOperational
         returns(uint256)
     {
         return minAirlineConsensusThreshold;
     }
 
-    function setMinimumInitialFund(uint256 minFund) external 
+    function setMinimumInitialFund(uint256 minFund) external
         requireIsOperational
     {
         minInitialFund = minFund;
     }
 
-    function getMinimumInitialFund() external 
+    function getMinimumInitialFund() external
         requireIsOperational
         returns(uint256)
     {
@@ -370,7 +377,7 @@ contract FlightSuretyData {
     * @dev Fallback function for funding smart contract.
     *
     */
-    function() external payable 
+    function() external payable
     {
         fund(msg.sender);
     }

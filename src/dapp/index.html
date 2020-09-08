@@ -20,14 +20,34 @@
     </nav>
 
     <main class="container">
+        <div id="display-wrapper" class="row top-20"></div>
 
-        <div id="display-wrapper" class="top-20">
-        </div>
         <div class="row top-20">
-            <h2>Administrator: </h2>
-            <label class="form">Airline Count: </label>
-            <p id="airline-count"></p>
+            <section>
+                <h2>Administrator</h2>
+                <div class="row">
+                    <div class="col-sm-4 field">Operational Status: </div>
+                    <div class="col-sm-8 field-value" id="platform-status"></div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4 field">Airline Count: </div>
+                    <div class="col-sm-8 field-value" id="airline-count"></div>
+                </div>
+            </section>
         </div>
+
+        <div class="row top-20">
+            <div class="col-sm-2"><btn class="btn btn-primary" id="fund-airline-1">Fund Airline 1</btn></div>
+            <div class="col-sm-2"><btn class="btn btn-primary" id="register-airline-2">Register Airline 2</btn></div>
+            <div class="col-sm-2"><btn class="btn btn-primary" id="register-airline-3">Register Airline 3</btn></div>
+            <div class="col-sm-2"><btn class="btn btn-primary" id="register-airline-4">Register Airline 4</btn></div>
+            <div class="col-sm-2"><btn class="btn btn-primary" id="register-airline-5">Register Airline 5</btn></div>
+        </div>
+
+        <div class="row top-20">
+            <label class="form">Airlines</label> <input type="text" id="airline-address"> <btn class="btn btn-primary" id="register-airline">Register</btn>
+        </div>
+
         <div class="row top-20">
             <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
         </div>

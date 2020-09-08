@@ -40,7 +40,7 @@ function generateRandomState() {
 // Setup application
 web3.eth.getAccounts((error, accounts) => {
   let owner = accounts[0];
-  flightSuretyData.methods.authorizeCaller(config.appAddress).send({ from: owner }, (error, result) => {
+  flightSuretyData.methods.authorizeContract(config.appAddress).send({ from: owner }, (error, result) => {
     if (error) {
       console.log(error);
     } else {
