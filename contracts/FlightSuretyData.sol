@@ -324,7 +324,7 @@ contract FlightSuretyData {
         requireIsOperational
         returns(uint256)
     {
-        require(passengerBalances[msg.sender].balance, 'Passenger does not exists or has an insurance policy');
+        require(passengerBalances[msg.sender].exists == true, 'Passenger does not exists or has an insurance policy');
         return passengerBalances[msg.sender].balance;
     }
 
