@@ -65,7 +65,7 @@ contract FlightSuretyData {
     event AirlineRegistered(address newAirline);
     event AirlineFunded(address airline);
     event PassengerRefunded(address passenger, uint256 refundAmount);
-
+    event PassengerPaid(address passenger, uint256 amount);
 
     /**
     * @dev Constructor
@@ -127,7 +127,7 @@ contract FlightSuretyData {
     */
     modifier requireAirlineApprovalConditions(address airline)
     {
-        require(airlines[airline].registeredNumber > minAirlineConsensusThreshold, "Airline does not need approval via consensus");
+        require(airlines[airline].registeredNumber >= minAirlineConsensusThreshold, "Airline does not need approval via consensus");
         _;
     }
 
@@ -153,7 +153,7 @@ contract FlightSuretyData {
     modifier updatesAirlineApproval(address airline)
     {
         _;
-        if (airlines[airline].votes.voteCount > airlinesCount.mul(minPercentageVotesRequired.div(100))) {
+        if (airlines[airline].votes.voteCount > airlinesCount.div(100 / minPercentageVotesRequired)) {
             approveAirline(airline);
         }
     }
@@ -333,8 +333,17 @@ contract FlightSuretyData {
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay() external pure
+    function pay(address passenger) 
+        external
+        requireIsOperational
+        requireAuthorizedContracts
     {
+        require(passengerBalances[passenger].balance > 0, 'No balances to withdraw from');
+        require(address(this).balance > passengerBalances[passenger].balance, 'Current funds in correct insufficient');
+        uint256 amount = passengerBalances[passenger].balance;
+        passengerBalances[passenger].balance = 0;
+        passenger.transfer(amount);
+        emit PassengerPaid(passenger, amount);
     }
 
    /**
@@ -359,6 +368,24 @@ contract FlightSuretyData {
         returns(bool)
     {
         return airlines[airline].exists && airlines[airline].isApproved && airlines[airline].isFunded;
+    }
+
+    function isAirlineApproved(address airline) 
+        external
+        view
+        requireIsOperational()
+        returns(bool)
+    {
+        return airlines[airline].isApproved;
+    }
+
+    function isAirlineFunded(address airline) 
+        external
+        view
+        requireIsOperational()
+        returns(bool)
+    {
+        return airlines[airline].isFunded;
     }
 
     function isAirlineRegistered(address airline) 

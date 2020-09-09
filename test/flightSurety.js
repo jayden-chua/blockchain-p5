@@ -112,21 +112,64 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(result, true, 'Flight should have been registered')
     });
 
-    it('(airline) that is funded and approved cannot register the same Flight repeatedly using registerFlight()', async () => {
-        let revertted = false;
-        let flight = 'MX1234';
-        // registerFlight() expects depature time in uint256 (integer)
-        // Date.now() provides dates in miliseconds
-        // we will got with second accuracy
-        let departure = Math.round(Date.now() / 1000);
-        await config.flightSuretyApp.registerFlight(flight, departure, { from: config.owner });
+    it('(airline) may register a new airline until there are at least four airlines registered', async () => {
+        // Assert that the current number of airline is 4
+        await config.flightSuretyApp.registerAirline(accounts[5], { from: config.owner }); 
+        let currentAirlinesRegistered = await config.flightSuretyData.getAirlinesCount({ from: config.owner });
+        assert.equal(4, currentAirlinesRegistered, 'Same flight cannot be registered repeatedly');
         
-        try {
-            await config.flightSuretyApp.registerFlight(flight, departure, { from: config.owner });
-        } catch(e) {
-            revertted = true;
-        }
-        assert.equal(revertted, true, 'Same flight cannot be registered repeatedly');
+        // Assert that the 4th airline is registered and approved
+        let isAirlineRegistered = await config.flightSuretyData.isAirlineRegistered(accounts[5], { from: config.owner });
+        let isAirlineApproved = await config.flightSuretyData.isAirlineApproved(accounts[5], { from: config.owner });
+        assert.equal(true, isAirlineRegistered && isAirlineApproved, 'Airline must be registered and approved');
+        
+        // Assert that the airline is added to the queue for voting as 5
+        await config.flightSuretyApp.registerAirline(accounts[6], { from: config.owner }); 
+        currentAirlinesRegistered = await config.flightSuretyData.getAirlinesCount({ from: config.owner });
+        assert.equal(5, currentAirlinesRegistered, 'Same flight cannot be registered repeatedly');
+        
+        // Airline is only added as registered, but not approved
+        isAirlineRegistered = await config.flightSuretyData.isAirlineRegistered(accounts[6], { from: config.owner }); 
+        assert.equal(true, isAirlineRegistered, 'Airline must be able to be added to the queue for voting');
+        isAirlineApproved = await config.flightSuretyData.isAirlineApproved(accounts[6], { from: config.owner });
+        assert.equal(false, isAirlineApproved, 'Airline must not be approved yet without voting');
+
     });
 
+    it('(airline) needs more than 50% of registered airlines', async () => {
+        // Assert that the current number of airline is 5
+        let currentAirlinesRegistered = await config.flightSuretyData.getAirlinesCount({ from: config.owner });
+        assert.equal(5, currentAirlinesRegistered, 'Total number of at this point must be 5');
+
+        // // Fund 2 more airlines
+        let fundAirlineValue = web3.utils.toWei('10', 'ether');
+        await config.flightSuretyApp.fundAirline({ from: accounts[3], value: fundAirlineValue });
+        await config.flightSuretyApp.fundAirline({ from: accounts[4], value: fundAirlineValue });
+
+        // First airline votes and checks
+        await config.flightSuretyApp.voteAirline(accounts[6], {from: config.owner});
+        isAirlineApproved = await config.flightSuretyData.isAirlineApproved(accounts[6], { from: config.owner });
+        assert.equal(false, isAirlineApproved, 'Airline must be registered and not approved now');
+
+        // Second airline votes and checks
+        await config.flightSuretyApp.voteAirline(accounts[6], { from: accounts[3] });
+        isAirlineApproved = await config.flightSuretyData.isAirlineApproved(accounts[6], { from: config.owner });
+        assert.equal(false, isAirlineApproved, 'Airline must be registered and not approved now');
+
+        // Third airline votes and checks airline is approved since 3 is greater than 50%
+        // TODO, how to do do floating point number calculation in solidity - is there such a thing?
+        await config.flightSuretyApp.voteAirline(accounts[6], { from: accounts[4] });
+        isAirlineApproved = await config.flightSuretyData.isAirlineApproved(accounts[6], { from: config.owner });
+        assert.equal(true, isAirlineApproved, 'Airline must be registered and not approved now');
+    });
+
+    it('(airline) that is approved and not funded cannot register a new airline', async () => {
+        let reverted = false;
+        try {
+            await config.flightSuretyApp.registerAirline(account[7], { from: account[6] });
+        } catch(e) {
+            reverted = true;
+        }
+        assert.equal(reverted, true, 'Non funded airline cannot register new airlines');
+    });
 });

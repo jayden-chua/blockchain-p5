@@ -193,6 +193,13 @@ contract FlightSuretyApp {
         emit OracleRequest(index, airline, flight, timestamp);
     }
 
+    function passengerWithdraw()
+        external 
+        requireIsOperational
+    {
+        flightData.pay(msg.sender);
+    }   
+
 
 // region ORACLE MANAGEMENT
 
@@ -327,7 +334,7 @@ contract FlightSuretyApp {
 
     function isConsensusNeeded() internal view returns (bool consensusNeeded)
     {
-        return flightData.getAirlinesCount() > flightData.getMinimumAirlineConsensus();
+        return flightData.getAirlinesCount() >= flightData.getMinimumAirlineConsensus();
     }
 
     function getAirlinesCount() public view returns (uint256) {

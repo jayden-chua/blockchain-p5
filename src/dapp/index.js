@@ -3,7 +3,6 @@ import DOM from './dom';
 import Contract from './contract';
 import './flightsurety.css';
 
-
 (async() => {
 
     let result = null;
@@ -18,6 +17,16 @@ import './flightsurety.css';
     };
 
     let contract = new Contract('localhost', () => {
+        populateFlightOptions(contract.flights);
+
+        contract.registerAirlines((error, result) => {
+            if (error) {
+                console.log(error);
+            } else {
+                console.log(result);
+            }
+        });
+
         contract.isOperational((error, result) => {
             if (error) console.log(error);
             display('Operational Status', 'Check if contract is operational', [ { label: 'Operational Status', error: error, value: result} ]);
@@ -50,7 +59,7 @@ import './flightsurety.css';
 
         // User-submitted transaction
         DOM.elid('fund-airline-1').addEventListener('click', () => {
-            contract.fundAirline((error, result) => {
+            contract.fundAirline(contract.owner, (error, result) => {
                 display('Fund Airlines', 'Trigger fund airline', [{ label: 'Funded Airline Address', error: error, value: result }]);
                 if (result) {
                     DOM.elid('fund-airline-1').remove();
@@ -79,18 +88,20 @@ import './flightsurety.css';
         DOM.elid('submit-flight-registration').addEventListener('click', () => {
             let flight = DOM.elid('register-flight-number').value;
             let departure = fakeDate;
-            contract.registerFlight(flight, departure, (error, result) => {
+            contract.registerFlight(contract.owner, flight, departure, (error, result) => {
                 display('Flight', 'Trigger Flight Registration', [{ label: 'Flight Registration Completed', error: error, value: result }]);
             });
         });
 
-        DOM.elid('submit-insurance-purchase').addEventListener('click', () => {
+        DOM.elid('submit-insurance-purchase').addEventListener('click', async () => {
             let flight = DOM.elid('buy-insurance-flightno').value;
             let premium = DOM.elid('buy-insurance-premium').value;
             let departure = fakeDate;
-            contract.buyInsurance(flight, departure, premium, (error, result) => {
+            console.log('Passenger balance before purchase: ' + await contract.web3.eth.getBalance(contract.passengers[0]));
+            await contract.buyInsurance(flight, departure, premium, (error, result) => {
                 display('Passenger', 'Trigger Insurance Purchase', [{ label: 'Insurance Purchase Completed', error: error, value: result }]);
             });
+            console.log('Passenger balance after purchase: ' + await contract.web3.eth.getBalance(contract.passengers[0]));
         });
 
         DOM.elid('submit-oracle').addEventListener('click', () => {
@@ -107,6 +118,14 @@ import './flightsurety.css';
                 display('Passenger', 'Latest Balance', [{ label: 'Passenger 0', error: error, value: result }]);
             });
         });
+
+        DOM.elid('passenger-withdraw').addEventListener('click', async () => {
+            await console.log('Passenger balance before withdrawal: ' + await contract.web3.eth.getBalance(contract.passengers[0]));
+            await contract.passengerWithdraw((error, result) => {
+                
+            });
+            await console.log('Passenger balance after withdrawal: ' + await contract.web3.eth.getBalance(contract.passengers[0]));
+        })
 
     });
 
@@ -126,5 +145,10 @@ function display(title, description, results) {
         section.appendChild(row);
     })
     displayDiv.append(section);
+}
 
+function populateFlightOptions(flights) {
+    flights.forEach(flight => {
+        console.log(flight);
+    });
 }
