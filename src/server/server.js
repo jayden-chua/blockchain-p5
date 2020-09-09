@@ -87,12 +87,12 @@ flightSuretyApp.events.OracleRequest({
     let flight = event.returnValues.flight;
     let timestamp = event.returnValues.timestamp;
     let statusCode = generateRandomState();
-
     for (let a = 0; a < oracles.length; a++) {
       if (oracles[a].index.includes(index)) {
         flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, statusCode)
         .send({
-          from: oracles[a].address
+          from: oracles[a].address,
+          gas: GAS
         }, (error, result) => {
           if (error) {
             console.log(error);

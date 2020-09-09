@@ -6,7 +6,7 @@ contract('Flight Surety Tests', async (accounts) => {
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
-    await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
+    await config.flightSuretyData.authorizeContract(config.flightSuretyApp.address);
   });
 
   /****************************************************************************************/
@@ -70,22 +70,63 @@ contract('Flight Surety Tests', async (accounts) => {
   });
 
     it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
+        try {
+            await config.flightSuretyApp.registerAirline(accounts[2], { from: config.firstAirline });
+        } catch (e) {}
+        let result = await config.flightSuretyData.isAirlineRegisteredApprovedAndFunded.call(accounts[2]);
+        assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
+    });
 
-    // ARRANGE
-    let newAirline = accounts[2];
+    it('(airline) can register an Airline using registerAirline() if it is funded', async () => {
+        let newAirline = accounts[3];
+        let fundAirlineValue = web3.utils.toWei('10', 'ether');
+        await config.flightSuretyApp.fundAirline({ from: config.owner, value: fundAirlineValue });
+        await config.flightSuretyApp.registerAirline(newAirline, { from: config.owner });
+        let result = await config.flightSuretyData.isAirlineRegistered.call(newAirline);
+        assert.equal(result, true, "Airline should be able to register another airline if it has provided funding");
+    });
 
-    // ACT
-    try {
-        await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
-    }
-    catch(e) {
+    it('(owner) can get total airline count', async () => {
+        await config.flightSuretyApp.registerAirline(accounts[4], { from: config.owner });
+        let result = await config.flightSuretyData.getAirlinesCount.call({ from: config.owner });
+        assert.equal(result, 3, "Airline owner should be able to get total airline registered");
+    });
 
-    }
-    let result = await config.flightSuretyData.isAirline.call(newAirline);
+    it('(airline) cannot register an Airline using registerAirline() on airlines that are already registered', async () => {
+        try { 
+            // Expecting this to revert since account 4 has already previously been registered
+            await config.flightSuretyApp.registerAirline(accounts[4], { from: config.firstAirline }); 
+        } catch(e) {}
+        let result = await config.flightSuretyData.getAirlinesCount.call({ from: config.owner });
+        assert.equal(result, 3, "Airline should not have been registered again");
+    });
 
-    // ASSERT
-    assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
+    it('(airline) that is funded and approved can register a Flight using registerFlight()', async () => {
+        let flight = 'MX1234';
+        // registerFlight() expects depature time in uint256 (integer)
+        // Date.now() provides dates in miliseconds
+        // we will got with second accuracy
+        let departure = Math.round(Date.now() / 1000);
+        await config.flightSuretyApp.registerFlight(flight, departure, { from: config.owner });
+        let result = await config.flightSuretyApp.isFlightRegistered.call(flight, departure, { from: config.owner });
+        assert.equal(result, true, 'Flight should have been registered')
+    });
 
+    it('(airline) that is funded and approved cannot register the same Flight repeatedly using registerFlight()', async () => {
+        let revertted = false;
+        let flight = 'MX1234';
+        // registerFlight() expects depature time in uint256 (integer)
+        // Date.now() provides dates in miliseconds
+        // we will got with second accuracy
+        let departure = Math.round(Date.now() / 1000);
+        await config.flightSuretyApp.registerFlight(flight, departure, { from: config.owner });
+        
+        try {
+            await config.flightSuretyApp.registerFlight(flight, departure, { from: config.owner });
+        } catch(e) {
+            revertted = true;
+        }
+        assert.equal(revertted, true, 'Same flight cannot be registered repeatedly');
     });
 
 });

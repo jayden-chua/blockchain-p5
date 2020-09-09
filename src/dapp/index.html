@@ -33,6 +33,10 @@
                     <div class="col-sm-4 field">Airline Count: </div>
                     <div class="col-sm-8 field-value" id="airline-count"></div>
                 </div>
+                <div class="row">
+                    <div class="col-sm-4 field">Passenger Insurance Premium: </div>
+                    <div class="col-sm-8 field-value" id="insurance-value"></div>
+                </div>
             </section>
         </div>
 
@@ -45,11 +49,22 @@
         </div>
 
         <div class="row top-20">
-            <label class="form">Airlines</label> <input type="text" id="airline-address"> <btn class="btn btn-primary" id="register-airline">Register</btn>
+            <label class="form">Flight</label> <input type="text" id="register-flight-number">
+            <btn class="btn btn-primary" id="submit-flight-registration">Register Flight for Owner Airline</btn>
+        </div>
+
+        <div class="row top-20">
+            <label class="form">Flight</label> <input type="text" id="buy-insurance-flightno">
+            <label class="form">Premium</label> <input type="text" id="buy-insurance-premium">
+            <btn class="btn btn-primary" id="submit-insurance-purchase">Buy Insurance for Flight</btn>
         </div>
 
         <div class="row top-20">
             <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+        </div>
+
+        <div class="row top-20">
+            <btn class="btn btn-primary" id="get-balance">Get Passenger 1 Balance</btn>
         </div>
     </main>
 

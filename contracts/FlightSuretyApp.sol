@@ -34,6 +34,7 @@ contract FlightSuretyApp {
         uint256 updatedTimestamp;
         address airline;
     }
+
     mapping(bytes32 => Flight) private flights;
 
     /********************************************************************************************/
@@ -74,7 +75,7 @@ contract FlightSuretyApp {
     modifier requireIsAuthorizedAirline()
     {
         if (flightData.getAirlinesCount() > 0) {
-            require(flightData.isAirline(msg.sender), "Airline is not authorized to register other airlines.");
+            require(flightData.isAirlineRegisteredApprovedAndFunded(msg.sender), "Airline is not authorized to register other airlines.");
         }
         _;
     }
@@ -118,17 +119,17 @@ contract FlightSuretyApp {
         public
         requireIsOperational()
         requireIsAuthorizedAirline()
-        returns(bool success, uint256 votes)
+        returns(uint256)
     {
-        flightData.registerAirline(airlineAddress, isConsensusNeeded());
-        return (true, 0);
+        return flightData.registerAirline(airlineAddress, isConsensusNeeded());
     }
 
     /**
      * @dev Gives an approval vote to airline
      *
      */
-    function voteAirline(address airlineAddress) public
+    function voteAirline(address airlineAddress) 
+        public
         requireIsOperational()
     {
         flightData.voteAirline(airlineAddress, msg.sender);
@@ -151,11 +152,20 @@ contract FlightSuretyApp {
     * @dev Register a future flight for insuring.
     *
     */
-    function registerFlight(string flight, uint256 departureTimestamp) external
+    function registerFlight(string flight, uint256 departureTimestamp) 
+        external
+        returns(bytes32)
     {
-        flightData.registerFlight(msg.sender, flight, departureTimestamp);
+        return flightData.registerFlight(msg.sender, flight, departureTimestamp);
     }
 
+    function isFlightRegistered(string flight, uint256 departureTimestamp) 
+        external 
+        view
+        returns(bool)
+    {
+        return flightData.isFlightRegistered(msg.sender, flight, departureTimestamp);
+    }
    /**
     * @dev Called after oracle has updated flight status
     *
@@ -173,14 +183,13 @@ contract FlightSuretyApp {
     function fetchFlightStatus(address airline, string flight, uint256 timestamp) external
     {
         uint8 index = getRandomIndex(msg.sender);
-
         // Generate a unique key for storing the request
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
         oracleResponses[key] = ResponseInfo({
             requester: msg.sender,
             isOpen: true
         });
-
+        
         emit OracleRequest(index, airline, flight, timestamp);
     }
 
@@ -228,7 +237,6 @@ contract FlightSuretyApp {
     // they fetch data and submit a response
     event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
 
-
     // Register an oracle with the contract
     function registerOracle() external payable
     {
@@ -261,7 +269,7 @@ contract FlightSuretyApp {
 
 
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
-        require(oracleResponses[key].isOpen, "Flight or timestamp do not match oracle request");
+        require(oracleResponses[key].isOpen, "Flight or timestamp do not match oracle request / Response count met");
 
         oracleResponses[key].responses[statusCode].push(msg.sender);
 
@@ -269,7 +277,7 @@ contract FlightSuretyApp {
         // oracles respond with the *** same *** information
         emit OracleReport(airline, flight, timestamp, statusCode);
         if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
-
+            oracleResponses[key].isOpen = false;
             emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
             // Handle flight status as appropriate
@@ -317,7 +325,7 @@ contract FlightSuretyApp {
         return random;
     }
 
-    function isConsensusNeeded() internal returns (bool consensusNeeded)
+    function isConsensusNeeded() internal view returns (bool consensusNeeded)
     {
         return flightData.getAirlinesCount() > flightData.getMinimumAirlineConsensus();
     }
