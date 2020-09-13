@@ -14,44 +14,31 @@ export default class Contract {
         this.airlines = [];
         this.passengers = [];
         this.flights = {
-            1: {
+            0: {
                 code: "AX1111",
                 departureTime: Math.floor(Date.now() / 1000)
             },
-            2: {
+            1: {
                 code: "BX2222",
                 departureTime: Math.floor(Date.now() / 1000)
             },
-            3: {
+            2: {
                 code: "CX3333",
-                departureTime: Math.floor(Date.now() / 1000)
-            },
-            4: {
-                code: "DX4444",
                 departureTime: Math.floor(Date.now() / 1000)
             }
         };
     }
 
     initialize(callback) {
-        let self = this;
         this.web3.eth.getAccounts((error, accts) => {
-            console.log(self.flights[1]['code']);
-
             this.owner = accts[0];
 
             let counter = 1;
-            let totalAirlines = 5;
-            let flightCode;
-            
+            let totalAirlines = 4;
+
+            // Fund the first airline            
             while (this.airlines.length < totalAirlines) {
-                self.registerAirline(accts[counter]);
-                // Last airline should be approved via consenses, so don't fund
-                if (counter < totalAirlines) {
-                    self.fundAirline(accts[counter]);
-                }
-                self.registerFlight(accts[counter], self.flights[counter]['code'], self.flights[counter]['departureTime'], callback);
-                self.airlines.push(accts[counter++]);
+                this.airlines.push(accts[counter++]);
             }
 
             // Will only mostly use the first passenger for this dapp
@@ -70,11 +57,11 @@ export default class Contract {
             .call({ from: self.owner}, callback);
     }
 
-    fetchFlightStatus(flight, departure, callback) {
+    fetchFlightStatus(airline, flight, departure, callback) {
         let self = this;
         self.flightSuretyApp.methods
-            .fetchFlightStatus(self.owner, flight, departure)
-            .send({ from: self.owner}, callback);
+            .fetchFlightStatus(airline, flight, departure)
+            .send({ from: self.owner }, callback);
     }
 
     getAirlinesCount(callback) {
@@ -112,12 +99,12 @@ export default class Contract {
             .call({ from: self.owner }, callback);
     }
 
-    buyInsurance(flight, departureTimestamp, premium, callback) {
+    buyInsurance(passenger, airline, flight, departureTimestamp, premium, callback) {
         let self = this;
         premium = self.web3.utils.toWei(premium, 'ether');
         self.flightSuretyData.methods
-            .buy(self.owner, flight, departureTimestamp)
-            .send({ from: self.passengers[0], gas: 500000, gasPrice: 100000000000, value: premium }, callback); //TODO: make passenger dynamic
+            .buy(airline, flight, departureTimestamp)
+            .send({ from: passenger, gas: 500000, gasPrice: 100000000000, value: premium }, callback);
     }
 
     fundAirline(account, callback) {
@@ -139,6 +126,6 @@ export default class Contract {
         let self = this;
         self.flightSuretyApp.methods
             .passengerWithdraw()
-            .send({ from: self.passengers[0], gas: 500000, gasPrice: 100000000000 }, callback);
+            .send({ from: self.passengers[0] }, callback);
     }
 }

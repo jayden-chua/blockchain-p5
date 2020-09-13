@@ -39,28 +39,22 @@
                 </div>
             </section>
         </div>
-
         <div class="row top-20">
-            <div class="col-sm-2"><btn class="btn btn-primary" id="fund-airline-1">Fund Airline 1</btn></div>
-            <div class="col-sm-2"><btn class="btn btn-primary" id="register-airline-2">Register Airline 2</btn></div>
-            <div class="col-sm-2"><btn class="btn btn-primary" id="register-airline-3">Register Airline 3</btn></div>
-            <div class="col-sm-2"><btn class="btn btn-primary" id="register-airline-4">Register Airline 4</btn></div>
-            <div class="col-sm-2"><btn class="btn btn-primary" id="register-airline-5">Register Airline 5</btn></div>
+            <div class="col-sm-2">
+                <label class="form">Select Flight</label>
+                <select id="select-flights" class="dd-flight"></select>
+            </div>
+            <div class="col-sm-2">
+                <label class="form">Premium Amount</label>
+                <input type="text" id="premium-value" max="1" /> Ether (max 1)
+            </div>
+            <div class="col-sm-2">
+                <btn class="btn btn-primary" id="purchase-insurance">Purchase Flight Insurance</btn>
+            </div>
         </div>
 
         <div class="row top-20">
-            <label class="form">Flight</label> <input type="text" id="register-flight-number">
-            <btn class="btn btn-primary" id="submit-flight-registration">Register Flight for Owner Airline</btn>
-        </div>
-
-        <div class="row top-20">
-            <label class="form">Flight</label> <input type="text" id="buy-insurance-flightno">
-            <label class="form">Premium</label> <input type="text" id="buy-insurance-premium">
-            <btn class="btn btn-primary" id="submit-insurance-purchase">Buy Insurance for Flight</btn>
-        </div>
-
-        <div class="row top-20">
-            <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+            <label class="form">Flight</label> <select id="query-flights" class="dd-flight"></select> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
         </div>
 
         <div class="row top-20">
