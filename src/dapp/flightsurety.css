@@ -5,7 +5,11 @@ body {
 }
 
 .container {
-    margin-top: 400px;
+    margin-top: 400px;    
+}
+
+.boxes {
+    margin-top: 20px;
     background-color: #000;
     opacity: 0.9;
     color: #fff;
@@ -18,6 +22,10 @@ body {
 
 h5 {
     color: #999999;
+}
+
+hr {
+    border: 1px solid #fff;
 }
 
 section {
@@ -40,4 +48,7 @@ label.form {
 }
 input {
     margin-right: 30px;
+}
+.inline-button {
+    margin: 0 10px;
 }

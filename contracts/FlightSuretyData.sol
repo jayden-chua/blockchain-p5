@@ -66,7 +66,8 @@ contract FlightSuretyData {
     event AirlineFunded(address airline);
     event PassengerRefunded(address passenger, uint256 refundAmount);
     event PassengerPaid(address passenger, uint256 amount);
-
+    event InsurancePurchased(address airline, string flight, uint256 timestamp, bytes32 flightKey);
+    
     /**
     * @dev Constructor
     *      The deploying account becomes contractOwner
@@ -276,7 +277,10 @@ contract FlightSuretyData {
             insuredFlight: flight,
             isRefunded: false
         }));
+        emit InsurancePurchased(airline, flight, timestamp, flightKey);
     }
+    
+    
 
     /**
      *  @dev Credits payouts to insurees

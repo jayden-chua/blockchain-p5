@@ -18,53 +18,63 @@
             <span class="navbar-toggler-icon"></span>
         </button>
     </nav>
-
+    
     <main class="container">
-        <div id="display-wrapper" class="row top-20"></div>
-
-        <div class="row top-20">
-            <section>
-                <h2>Administrator</h2>
-                <div class="row">
-                    <div class="col-sm-4 field">Operational Status: </div>
-                    <div class="col-sm-8 field-value" id="platform-status"></div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-4 field">Airline Count: </div>
-                    <div class="col-sm-8 field-value" id="airline-count"></div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-4 field">Passenger Insurance Premium: </div>
-                    <div class="col-sm-8 field-value" id="insurance-value"></div>
-                </div>
-            </section>
-        </div>
-        <div class="row top-20">
-            <div class="col-sm-2">
-                <label class="form">Select Flight</label>
-                <select id="select-flights" class="dd-flight"></select>
-            </div>
-            <div class="col-sm-2">
-                <label class="form">Premium Amount</label>
-                <input type="text" id="premium-value" max="1" /> Ether (max 1)
-            </div>
-            <div class="col-sm-2">
-                <btn class="btn btn-primary" id="purchase-insurance">Purchase Flight Insurance</btn>
+        <div class="boxes">
+            <h2>Administrator</h2>
+            <h5>System Logs</h5>
+            <div class="row top-20">
+                <section id="display-wrapper"></section>
             </div>
         </div>
-
-        <div class="row top-20">
-            <label class="form">Flight</label> <select id="query-flights" class="dd-flight"></select> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
-        </div>
-
-        <div class="row top-20">
-            <btn class="btn btn-primary" id="get-balance">Get Passenger 1 Balance</btn>
-        </div>
-
-        <div class="row top-20">
-            <btn class="btn btn-primary" id="passenger-withdraw">Withdraw Passenger 1 Balance</btn>
+        <div class="boxes">
+            <h2>Passenger Panel</h2>
+            <h5>Purchase Flight Insurance</h5>
+            <div class="row top-20">
+                <div class="col-sm-4 field">
+                    <label class="form">Select Flight</label>
+                </div>
+                <div class="col-sm-8 field-value">
+                    <select id="select-flights" class="dd-flight"></select>
+                </div>
+                <div class="col-sm-4 field">
+                    <label class="form">Premium Amount (max 1 Ether)</label>
+                </div>
+                <div class="col-sm-8 field-value">
+                    <input type="text" id="premium-value" max="1" /> 
+                </div>
+            </div>
+            <div class="row top-20">
+                <div class="col-sm-4 field"></div>
+                <div class="col-sm-8 field-value">
+                    <btn class="btn btn-primary" id="purchase-insurance">Purchase Flight Insurance</btn>
+                </div>
+            </div>
+            <hr/>
+            <h5>Check Flight Status</h5>
+            <div class="row top-20">
+                <div class="col-sm-4 field"><label class="form">Flight</label></div>
+                <div class="col-sm-8 field-value"><select id="query-flights" class="dd-flight"></select></div>
+                
+                
+            </div>
+            <div class="row top-20">
+                <div class="col-sm-4 field"></div>
+                <div class="col-sm-8 field-value">
+                    <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+                </div>
+            </div>
+            <hr />
+            <h5>Other Actions</h5>
+            <div class="row top-20">
+                <div class="inline-button"><btn class="btn btn-primary" id="get-balance">Get Passenger Balance</btn></div>
+                <div class="inline-button"><btn class="btn btn-primary" id="passenger-withdraw">Withdraw Passenger Balance</btn></div>
+            </div>
+            <hr />
         </div>
     </main>
+
+    
 
 </body>
 

@@ -1,10 +1,8 @@
-
 import DOM from './dom';
 import Contract from './contract';
 import './flightsurety.css';
 
 (async() => {
-
     let result = null;
 
     const STATUS_CODES = {
@@ -36,33 +34,28 @@ import './flightsurety.css';
         createFlightSelectMenu(flights);
 
         contract.isOperational((error, result) => {
-            if (error) console.log(error);
-            display('Operational Status', 'Check if contract is operational', [ { label: 'Operational Status', error: error, value: result} ]);
-            DOM.elid('platform-status').innerHTML = result;
+            display([{ label: 'Operational Status', error: error, value: result}]);
         });
 
         contract.getAirlinesCount((error, result) => {
-            if (error) console.log(error);
-            DOM.elid('airline-count').innerHTML = result;
+            display([{ label: 'Total No. of Registered Airlines', error: error, value: result }]);
         });
 
-        contract.flightSuretyData.events.AirlineRegistered()
-        .on('data', (err, res) => {
-            if (err) { console.log(err); }
-            contract.getAirlinesCount((error, result) => {
-                if (error) console.log(error);
-                DOM.elid('airline-count').innerHTML = result;
-            });
+        contract.flightSuretyData.events.InsurancePurchased((error, result) => {
+            if (result.returnValues) {
+                let response = result.returnValues;
+                display([{ label: 'Insurance Purchased', error: error, value: `Airline: ${response.airline} | Flight: ${response.flight} | Departure: ${response.timestamp} | FlightKey: ${response.flightKey}` }]);
+            }
         });
 
         contract.flightSuretyApp.events.FlightStatusInfo((error, result) => {
             if (result.returnValues.status) {
-                display('Flight Status', 'Latest Flight Status', [{ label: 'Flight status', error: error, value: result.returnValues.flight + ' ' + STATUS_CODES[result.returnValues.status] }]);
+                display([{ label: 'Flight status', error: error, value: result.returnValues.flight + ' ' + STATUS_CODES[result.returnValues.status] }]);
             }
         });
 
         contract.flightSuretyData.events.PassengerRefunded((error, result) => {
-            display('Passenger Insurance', 'Latest Passenger Insurance Status', [{ label: 'Policy Amount Refunded', error: error, value: result.returnValues.refundAmount }]);
+            display([{ label: 'Policy Amount Refunded', error: error, value: result.returnValues.refundAmount }]);
         });
 
         DOM.elid('submit-oracle').addEventListener('click', () => {
@@ -73,23 +66,23 @@ import './flightsurety.css';
             let departure = selectedFlight.options[selectedFlight.selectedIndex].getAttribute('data-departure');
             
             contract.fetchFlightStatus(airline, flight, departure, (error, result) => {
-                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: error, value: result} ]);
+                display([{ label: 'Fetch Flight Triggered', error: error, value: result} ]);
             });
         })
 
         DOM.elid('get-balance').addEventListener('click', () => {
             contract.getPassengerBalance((error, result) => {
-                display('Passenger', 'Latest Balance', [{ label: 'Passenger 0', error: error, value: result }]);
+                display([{ label: 'Passenger Insurance Available for Withdrawal ', error: error, value: result }]);
             });
         });
 
         DOM.elid('passenger-withdraw').addEventListener('click', async () => {
-            console.log('Passenger balance before withdrawal: ' + await contract.web3.eth.getBalance(contract.passengers[0]));
+            display([{ label: 'Passenger wallet before withdrawal', error: '', value: await contract.web3.eth.getBalance(contract.passengers[0]) }]);
             contract.passengerWithdraw(async (error, result) => {
                 if (error) {
                     console.log(error);
                 } else {
-                    console.log('Passenger balance after withdrawal: ' + await contract.web3.eth.getBalance(contract.passengers[0]));
+                    display([{ label: 'Passenger wallet after withdrawal', error: error, value: await contract.web3.eth.getBalance(contract.passengers[0]) }]);
                 }
             });
              
@@ -108,10 +101,8 @@ import './flightsurety.css';
             console.log(contract.passengers[0], airline, flight, departure, premium);
             
             contract.buyInsurance(contract.passengers[0], airline, flight, departure, premium, (error, result) => {
-                if (error) {
-                    console.log(error);
-                }
-                display('Passenger', 'Trigger Insurance Purchase', [{ label: 'Insurance Purchase Completed', error: 'ERROR: ' + error, value: result }]);
+                if (error) console.log(error);
+                display([{ label: 'Insurance Purchase Triggered', error: error, value: result }]);
             });
         });
             
@@ -122,19 +113,14 @@ import './flightsurety.css';
 
 })();
 
-function display(title, description, results) {
+function display(results) {
     let displayDiv = DOM.elid("display-wrapper");
-    displayDiv.innerHTML = '';
-    let section = DOM.section();
-    section.appendChild(DOM.h2(title));
-    section.appendChild(DOM.h5(description));
     results.map((result) => {
-        let row = section.appendChild(DOM.div({className:'row'}));
+        let row = DOM.div({className:'row'});
         row.appendChild(DOM.div({className: 'col-sm-4 field'}, result.label));
         row.appendChild(DOM.div({className: 'col-sm-8 field-value'}, result.error ? String(result.error) : String(result.value)));
-        section.appendChild(row);
-    })
-    displayDiv.append(section);
+        displayDiv.appendChild(row);    
+    });
 }
 
 /**
